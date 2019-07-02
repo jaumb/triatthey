@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import csv
 import sys
@@ -29,23 +29,18 @@ class Participant(object):
 
     def __str__(self):
         return """\
-        <Participant
-            name={},
-            swim={},
-            bike={},
-            run={},
-            swim_rank={},
-            bike_rank={},
-            run_rank={},
-            sum={}
-        >
+        <Participant name={},
+          swim={}, swim_rank={},
+          bike={}, bike_rank={},
+          run={}, run_rank={},
+          sum={} >\
         """.format(
             self.name(),
             self.swim(),
-            self.bike(),
-            self.run(),
             self.swim_rank(),
+            self.bike(),
             self.bike_rank(),
+            self.run(),
             self.run_rank(),
             self.sum()
         )
@@ -106,17 +101,26 @@ def calculate_ranks(participants: list):
     # calculate swim rank
     participants.sort(key=lambda p: p.swim(), reverse=True)
     for i in range(len(participants)):
-        participants[i].set_swim_rank(i + 1)
+        if i > 0 and participants[i].swim() == participants[i - 1].swim():
+            participants[i].set_swim_rank(participants[i - 1].swim_rank())
+        else:
+            participants[i].set_swim_rank(i + 1)
 
     # calculate bike rank
     participants.sort(key=lambda p: p.bike(), reverse=True)
     for i in range(len(participants)):
-        participants[i].set_bike_rank(i + 1)
+        if i > 0 and participants[i].bike() == participants[i - 1].bike():
+            participants[i].set_bike_rank(participants[i - 1].bike_rank())
+        else:
+            participants[i].set_bike_rank(i + 1)
 
     # calculate run rank
     participants.sort(key=lambda p: p.run(), reverse=True)
     for i in range(len(participants)):
-        participants[i].set_run_rank(i + 1)
+        if i > 0 and participants[i].run() == participants[i - 1].run():
+            participants[i].set_run_rank(participants[i - 1].run_rank())
+        else:
+            participants[i].set_run_rank(i + 1)
 
 
 # write results to a csv file with output suffix
@@ -143,11 +147,14 @@ def write_results(filename: str, participants: list):
 
 # open's the csv file and controls the overall processing flow
 def process_results(filename: str):
-    with open(filename, newline='') as csvfile:
+    with open(filename, newline='', encoding='utf-8-sig') as csvfile:
         csvreader = DictReaderStrip(csvfile, dialect='excel')
         participants = []
         for row in csvreader:
-            participants.append(Participant(row[NAME], float(row[SWIM]), float(row[BIKE]), float(row[RUN])))
+            if NAME not in row:
+                print("Missing name column: ", row)
+            else:
+                participants.append(Participant(row[NAME], float(row[SWIM]), float(row[BIKE]), float(row[RUN])))
 
     calculate_ranks(participants)
     write_results(filename, participants)
